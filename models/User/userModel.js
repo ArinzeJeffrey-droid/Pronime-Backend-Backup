@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const bcrypt = require("bcryptjs")
 
 
 const userSchema = new mongoose.Schema({
@@ -17,7 +18,7 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
     },
     phoneNumber: {
-        type: String
+        type: String    
     },
     password: {
         type: String,
@@ -33,7 +34,8 @@ const userSchema = new mongoose.Schema({
                 return el === this.password
             },
             message: "Passwords are not the same"
-        }
+        },
+        select: false
     },
     passwordChangedAt: Date,
     passwordResetToken: String,
@@ -45,6 +47,14 @@ const userSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
+})
+
+//Hash password before persisting to the database
+userSchema.pre('save', async function(next){
+    if(!this.isModified('password')) return next()
+    this.password = await bcrypt.hash(this.password, 12)
+    this.passwordConfirm = undefined
+    next()
 })
 
 const User = mongoose.model("User", userSchema)
